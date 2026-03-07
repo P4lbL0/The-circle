@@ -1,75 +1,86 @@
 'use client'
 
-export function MemberCard({ member, rank }: { member: any, rank: number }) {
-  const profile = member.profiles
+interface StatField {
+  key:           string
+  label:         string
+  type:          string
+  visible_public: boolean
+}
+
+interface Theme {
+  primaryColor: string
+  accentColor:  string
+  font:         string
+  darkMode:     boolean
+}
+
+export function MemberCard({ member, rank, theme, statFields, formulaLabel }: {
+  member:       any
+  rank:         number
+  theme:        Theme
+  statFields:   StatField[]
+  formulaLabel: string
+}) {
+  const profile     = member.profiles
   const displayName = profile?.display_name ?? profile?.email?.split('@')[0] ?? '???'
-  const initial = displayName[0]?.toUpperCase()
+  const initial     = displayName[0]?.toUpperCase()
 
   const roleColors: Record<string, string> = {
-    owner: '#FFC107',
+    owner:     theme.primaryColor,
     moderator: '#00bcd4',
-    member: '#4CAF50',
+    member:    '#4CAF50',
   }
   const roleColor = roleColors[member.role] ?? '#888'
+
+  const numericStats = statFields.filter(f => f.type === 'number' || f.type === 'percentage')
 
   return (
     <div
       style={{
-        background: 'linear-gradient(145deg, #1a1a1a, #0d0d0d)',
-        border: '1px solid #333',
-        position: 'relative',
-        overflow: 'hidden',
-        transition: 'all 0.3s',
+        background: theme.darkMode ? 'linear-gradient(145deg, #1a1a1a, #0d0d0d)' : 'linear-gradient(145deg, #ffffff, #f8f8f8)',
+        border: `1px solid ${theme.darkMode ? '#333' : '#e0e0e0'}`,
+        position: 'relative', overflow: 'hidden', transition: 'all 0.3s',
         clipPath: 'polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px)',
       }}
       onMouseEnter={e => {
         const el = e.currentTarget as HTMLElement
-        el.style.borderColor = '#FFC107'
+        el.style.borderColor = theme.primaryColor
         el.style.transform = 'translateY(-5px)'
-        el.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)'
+        el.style.boxShadow = `0 10px 30px rgba(0,0,0,0.5)`
       }}
       onMouseLeave={e => {
         const el = e.currentTarget as HTMLElement
-        el.style.borderColor = '#333'
+        el.style.borderColor = theme.darkMode ? '#333' : '#e0e0e0'
         el.style.transform = 'translateY(0)'
         el.style.boxShadow = 'none'
       }}
     >
-      {/* Ligne jaune top */}
+      {/* Ligne top couleur principale */}
       <div style={{
         position: 'absolute', top: 0, left: 0, width: '100%', height: '2px',
-        background: 'linear-gradient(90deg, transparent, #FFC107, transparent)',
+        background: `linear-gradient(90deg, transparent, ${theme.primaryColor}, transparent)`,
       }} />
 
       {/* Rang */}
       <div style={{
         position: 'absolute', top: '10px', right: '10px',
-        fontFamily: "'Orbitron', sans-serif",
-        fontSize: '0.7rem', color: '#444',
+        fontFamily: `'${theme.font}', sans-serif`,
+        fontSize: '0.7rem', color: theme.darkMode ? '#444' : '#ccc',
       }}>
         #{rank}
       </div>
 
-      {/* Header card */}
+      {/* Header */}
       <div style={{
-        padding: '20px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '15px',
-        background: 'rgba(255,255,255,0.02)',
+        padding: '20px', display: 'flex', alignItems: 'center', gap: '14px',
+        background: theme.darkMode ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
       }}>
         <div style={{
-          width: '60px', height: '60px',
-          background: '#222',
-          border: `1px solid ${roleColor}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontFamily: "'Orbitron', sans-serif",
-          fontSize: '1.5rem',
-          color: '#FFC107',
-          borderRadius: '4px',
-          boxShadow: '0 0 10px rgba(0,0,0,0.5)',
-          overflow: 'hidden',
-          flexShrink: 0,
+          width: '58px', height: '58px', background: theme.darkMode ? '#222' : '#eee',
+          border: `1px solid ${roleColor}`, display: 'flex', alignItems: 'center',
+          justifyContent: 'center', fontFamily: `'${theme.font}', sans-serif`,
+          fontSize: '1.4rem', color: theme.primaryColor, borderRadius: '4px',
+          overflow: 'hidden', flexShrink: 0,
         }}>
           {profile?.avatar_url
             ? <img src={profile.avatar_url} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -78,39 +89,27 @@ export function MemberCard({ member, rank }: { member: any, rank: number }) {
         </div>
         <div>
           <h3 style={{
-            margin: 0,
-            fontFamily: "'Orbitron', sans-serif",
-            fontSize: '1rem',
-            color: 'white',
-            letterSpacing: '1px',
-            textTransform: 'uppercase',
+            margin: 0, fontFamily: `'${theme.font}', sans-serif`, fontSize: '0.95rem',
+            color: theme.darkMode ? 'white' : '#111', letterSpacing: '1px', textTransform: 'uppercase',
           }}>
             {displayName}
           </h3>
-          <span style={{
-            fontSize: '0.75rem',
-            color: roleColor,
-            textTransform: 'uppercase',
-            letterSpacing: '1px',
-          }}>
+          <span style={{ fontSize: '0.72rem', color: roleColor, textTransform: 'uppercase', letterSpacing: '1px' }}>
             {member.role}
           </span>
         </div>
       </div>
 
       {/* Badges */}
-      {member.badges && member.badges.length > 0 && (
-        <div style={{ padding: '0 20px 10px', display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+      {member.badges?.length > 0 && (
+        <div style={{ padding: '0 18px 10px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
           {member.badges.map((badge: any, i: number) => (
             <span key={i} style={{
-              fontSize: '0.62rem',
+              fontSize: '0.6rem', padding: '2px 6px', borderRadius: '2px', fontWeight: 'bold',
+              border: `1px solid ${badge.color ?? theme.primaryColor}`,
+              color: badge.color ?? theme.primaryColor,
+              background: `${badge.color ?? theme.primaryColor}18`,
               textTransform: 'uppercase',
-              fontWeight: 'bold',
-              padding: '2px 6px',
-              borderRadius: '2px',
-              border: '1px solid #FFC107',
-              color: '#FFC107',
-              background: 'rgba(255,193,7,0.1)',
             }}>
               {badge.name ?? badge}
             </span>
@@ -118,21 +117,60 @@ export function MemberCard({ member, rank }: { member: any, rank: number }) {
         </div>
       )}
 
-      {/* Stats footer */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: '1px solid #222' }}>
-        <div style={{ padding: '14px', textAlign: 'center', borderRight: '1px solid #222' }}>
-          <span style={{ display: 'block', fontFamily: "'Orbitron', sans-serif", fontSize: '1.1rem', color: 'white' }}>
-            {member.points}
-          </span>
-          <span style={{ fontSize: '0.68rem', color: '#666', textTransform: 'uppercase' }}>Points</span>
+      {/* Stats dynamiques */}
+      {numericStats.length > 0 ? (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${Math.min(numericStats.length + 1, 4)}, 1fr)`,
+          borderTop: `1px solid ${theme.darkMode ? '#222' : '#eee'}`,
+        }}>
+          {/* Score calculé */}
+          <div style={{
+            padding: '13px 8px', textAlign: 'center',
+            borderRight: `1px solid ${theme.darkMode ? '#222' : '#eee'}`,
+            background: `${theme.primaryColor}08`,
+          }}>
+            <span style={{ display: 'block', fontFamily: `'${theme.font}', sans-serif`, fontSize: '1.1rem', color: theme.primaryColor, fontWeight: 700 }}>
+              {member.computed_score}
+            </span>
+            <span style={{ fontSize: '0.62rem', color: theme.darkMode ? '#555' : '#bbb', textTransform: 'uppercase' }}>
+              {formulaLabel}
+            </span>
+          </div>
+          {/* Champs dynamiques */}
+          {numericStats.slice(0, 3).map((field, i) => (
+            <div key={field.key} style={{
+              padding: '13px 8px', textAlign: 'center',
+              borderRight: i < numericStats.slice(0, 3).length - 1 ? `1px solid ${theme.darkMode ? '#222' : '#eee'}` : 'none',
+            }}>
+              <span style={{ display: 'block', fontFamily: `'${theme.font}', sans-serif`, fontSize: '1.1rem', color: theme.darkMode ? 'white' : '#111' }}>
+                {member.custom_stats?.[field.key] ?? 0}
+              </span>
+              <span style={{ fontSize: '0.62rem', color: theme.darkMode ? '#555' : '#bbb', textTransform: 'uppercase' }}>
+                {field.label}
+              </span>
+            </div>
+          ))}
         </div>
-        <div style={{ padding: '14px', textAlign: 'center' }}>
-          <span style={{ display: 'block', fontFamily: "'Orbitron', sans-serif", fontSize: '1.1rem', color: 'white' }}>
-            {member.badges?.length ?? 0}
-          </span>
-          <span style={{ fontSize: '0.68rem', color: '#666', textTransform: 'uppercase' }}>Badges</span>
+      ) : (
+        <div style={{
+          display: 'grid', gridTemplateColumns: '1fr 1fr',
+          borderTop: `1px solid ${theme.darkMode ? '#222' : '#eee'}`,
+        }}>
+          <div style={{ padding: '13px', textAlign: 'center', borderRight: `1px solid ${theme.darkMode ? '#222' : '#eee'}` }}>
+            <span style={{ display: 'block', fontFamily: `'${theme.font}', sans-serif`, fontSize: '1.1rem', color: theme.darkMode ? 'white' : '#111' }}>
+              {member.points}
+            </span>
+            <span style={{ fontSize: '0.62rem', color: theme.darkMode ? '#555' : '#bbb', textTransform: 'uppercase' }}>Points</span>
+          </div>
+          <div style={{ padding: '13px', textAlign: 'center' }}>
+            <span style={{ display: 'block', fontFamily: `'${theme.font}', sans-serif`, fontSize: '1.1rem', color: theme.darkMode ? 'white' : '#111' }}>
+              {member.badges?.length ?? 0}
+            </span>
+            <span style={{ fontSize: '0.62rem', color: theme.darkMode ? '#555' : '#bbb', textTransform: 'uppercase' }}>Badges</span>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

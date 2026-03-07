@@ -26,7 +26,9 @@ export default function LoginPage() {
       return
     }
 
-    router.push('/dashboard')
+    const searchParams = new URLSearchParams(window.location.search)
+    const redirectTo   = searchParams.get('redirect') ?? '/dashboard'
+    router.push(redirectTo)
     router.refresh()
   }
 
