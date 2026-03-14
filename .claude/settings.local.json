@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(rm -rf .next)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(find c:/Users/lemir/Desktop/Projet/the_circle/src -type f -name *.ts*)",
+      "Bash(rm \"c:/Users/lemir/Desktop/Projet/the_circle/src/app/c/[slug]/forum/page.tsx\" \"c:/Users/lemir/Desktop/Projet/the_circle/src/app/c/[slug]/forum/[threadId]/page.tsx\" \"c:/Users/lemir/Desktop/Projet/the_circle/src/app/c/[slug]/forum/[threadId]/ThreadClient.tsx\" \"c:/Users/lemir/Desktop/Projet/the_circle/src/app/c/[slug]/forum/[threadId]/new/page.tsx\" \"c:/Users/lemir/Desktop/Projet/the_circle/src/app/\\(dashboard\\)/dashboard/[slug]/forum/page.tsx\" \"c:/Users/lemir/Desktop/Projet/the_circle/src/app/\\(dashboard\\)/dashboard/[slug]/forum/ForumClient.tsx\")",
+      "Bash(rmdir \"c:/Users/lemir/Desktop/Projet/the_circle/src/app/c/[slug]/forum/[threadId]/new\" \"c:/Users/lemir/Desktop/Projet/the_circle/src/app/c/[slug]/forum/[threadId]\" \"c:/Users/lemir/Desktop/Projet/the_circle/src/app/c/[slug]/forum\" \"c:/Users/lemir/Desktop/Projet/the_circle/src/app/\\(dashboard\\)/dashboard/[slug]/forum\")"
     ]
   }
 }

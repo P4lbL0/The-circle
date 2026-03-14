@@ -280,7 +280,7 @@ export default async function CommunityVitrinePage({ params }: Props) {
             <a href={`/c/${slug}/bets`} className="vit-header-link">🎲 Paris</a>
           )}
           {visibleModules.includes('forum') && (
-            <a href={`/c/${slug}/forum`} className="vit-header-link">💬 Forum</a>
+            <a href={`/c/${slug}/chat`} className="vit-header-link">💬 Chat</a>
           )}
           {visibleModules.includes('shop') && (
             <a href={`/c/${slug}/shop`} className="vit-header-link">🛍️ Boutique</a>
@@ -409,7 +409,7 @@ export default async function CommunityVitrinePage({ params }: Props) {
               <div className="vit-stat-pill">🎲 Paris</div>
             )}
             {activeModules.includes('forum') && (
-              <div className="vit-stat-pill">💬 Forum</div>
+              <div className="vit-stat-pill">💬 Chat</div>
             )}
             {activeModules.includes('shop') && (
               <div className="vit-stat-pill">🛍️ Boutique</div>
@@ -448,7 +448,7 @@ export default async function CommunityVitrinePage({ params }: Props) {
               <a href={`/c/${slug}/bets`} className="vit-nav-link">🎲 Paris</a>
             )}
             {visibleModules.includes('forum') && (
-              <a href={`/c/${slug}/forum`} className="vit-nav-link">💬 Forum</a>
+              <a href={`/c/${slug}/chat`} className="vit-nav-link">💬 Chat</a>
             )}
             {visibleModules.includes('shop') && (
               <a href={`/c/${slug}/shop`} className="vit-nav-link">🛍️ Boutique</a>

@@ -45,9 +45,9 @@ const MODULE_CONFIG = [
   },
   {
     key: 'forum',
-    label: 'Forum',
+    label: 'Chat Groupe',
     icon: '💬',
-    desc: 'Discussions organisées par catégories',
+    desc: 'Groupes de discussion temps réel style messagerie',
     plans: ['free', 'starter', 'pro'],
   },
   {

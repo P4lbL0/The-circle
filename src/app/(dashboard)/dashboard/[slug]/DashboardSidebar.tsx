@@ -21,7 +21,7 @@ const NAV_ITEMS = [
   { href: '/events',       icon: '📅', label: 'Événements'     },
   { href: '/tournaments',  icon: '🏆', label: 'Tournois'       },
   { href: '/bets',         icon: '🎲', label: 'Paris'          },
-  { href: '/forum',        icon: '💬', label: 'Forum'          },
+  { href: '/chat',         icon: '💬', label: 'Chat'           },
   { href: '/shop',         icon: '🛒', label: 'Boutique'       },
   { href: '/appearance',   icon: '🎨', label: 'Apparence'      },
   { href: '/settings',     icon: '⚙️',  label: 'Paramètres'    },

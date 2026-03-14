@@ -9,13 +9,13 @@ export const MEMBER_LIMITS: Record<Tier, number> = {
 
 // ── Limites souples (création de contenu) ─────────────────
 export const SOFT_LIMITS: Record<Tier, {
-  active_events:    number
-  forum_categories: number
-  shop_items:       number
+  active_events: number
+  chat_groups:   number
+  shop_items:    number
 }> = {
-  free:    { active_events: 5,        forum_categories: 3,        shop_items: 10       },
-  starter: { active_events: Infinity, forum_categories: Infinity, shop_items: Infinity },
-  pro:     { active_events: Infinity, forum_categories: Infinity, shop_items: Infinity },
+  free:    { active_events: 5,        chat_groups: 3,        shop_items: 10       },
+  starter: { active_events: Infinity, chat_groups: Infinity, shop_items: Infinity },
+  pro:     { active_events: Infinity, chat_groups: Infinity, shop_items: Infinity },
 }
 
 // ── Accès modules ─────────────────────────────────────────
