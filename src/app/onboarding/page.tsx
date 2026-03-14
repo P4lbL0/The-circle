@@ -269,7 +269,14 @@ export default function OnboardingPage() {
 
       if (communityError) throw communityError
 
-      // 3. Activer les modules
+      // 3. Ajouter l'owner comme membre
+      await supabase.from('community_members').insert({
+        community_id: community.id,
+        profile_id:   user.id,
+        role:         'owner',
+      })
+
+      // 4. Activer les modules
       await Promise.all(
         Object.entries(form.modules).map(([module, enabled]) =>
           supabase.from('features').update({ enabled }).eq('community_id', community.id).eq('module', module)

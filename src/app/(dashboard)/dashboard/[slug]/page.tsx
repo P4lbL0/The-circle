@@ -23,6 +23,22 @@ export default async function CommunityDashboardPage({ params }: Props) {
 
   if (!community) redirect('/dashboard')
 
+  // Auto-ajoute l'owner dans community_members s'il n'y est pas
+  const { data: ownerMember } = await supabase
+    .from('community_members')
+    .select('id')
+    .eq('community_id', community.id)
+    .eq('profile_id', user.id)
+    .single()
+
+  if (!ownerMember) {
+    await supabase.from('community_members').insert({
+      community_id: community.id,
+      profile_id:   user.id,
+      role:         'owner',
+    })
+  }
+
   // Récupère les membres
   const { data: members } = await supabase
     .from('community_members')
