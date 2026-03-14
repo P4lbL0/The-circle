@@ -265,7 +265,7 @@ export default async function CommunityVitrinePage({ params }: Props) {
           {publicModules.includes('shop') && (
             <a href={`/c/${slug}/shop`} className="vit-header-link">🛍️ Boutique</a>
           )}
-          <a href="/login" style={{
+          <a href={`/login?redirect=/c/${slug}`} style={{
             marginLeft: '12px',
             fontFamily: `'Orbitron', sans-serif`, fontSize: '0.72rem',
             color: primaryColor, border: `1px solid ${primaryColor}`,
