@@ -22,6 +22,19 @@ export default async function CommunityVitrinePage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   const isAdmin = !!user && user.id === community.owner_id
 
+  // Vérifier si l'user est déjà membre actif
+  let isMember = isAdmin
+  if (user && !isAdmin) {
+    const { data: membership } = await supabase
+      .from('community_members')
+      .select('id')
+      .eq('community_id', community.id)
+      .eq('profile_id', user.id)
+      .in('role', ['owner', 'moderator', 'member'])
+      .single()
+    isMember = !!membership
+  }
+
   const theme = community.theme_json as {
     primaryColor: string
     accentColor:  string
@@ -60,6 +73,8 @@ export default async function CommunityVitrinePage({ params }: Props) {
 
   const activeModules   = features?.map(f => f.module) ?? []
   const publicModules   = features?.filter(f => f.visibility === 'public').map(f => f.module) ?? []
+  // Les membres et admins voient tous les modules actifs
+  const visibleModules  = isMember ? activeModules : publicModules
   const statFields      = (statSchema?.fields as any[] ?? []).filter((f: any) => f.visible_public)
   const formulaConfig   = statSchema?.formula_config as any
 
@@ -79,8 +94,13 @@ export default async function CommunityVitrinePage({ params }: Props) {
     return { ...member, computed_score: score }
   }).sort((a, b) => b.computed_score - a.computed_score)
 
+  // Nom affiché dans le header si connecté
+  const currentMember = user ? membersWithScore.find(m => m.profile_id === user.id) : null
+  const currentDisplayName = (currentMember?.profiles as any)?.display_name
+    ?? user?.email?.split('@')[0]
+
   const showPodium = membersWithScore.length >= 3 && activeModules.includes('scores')
-  const showModuleNav = publicModules.length >= 2
+  const showModuleNav = visibleModules.length >= 2
 
   // Podium order: #2, #1, #3
   const podiumOrder = showPodium
@@ -245,36 +265,47 @@ export default async function CommunityVitrinePage({ params }: Props) {
           </div>
         </div>
 
-        {/* Right: nav links + login */}
+        {/* Right: nav links + login/user */}
         <div className="vit-header-nav" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          {publicModules.includes('scores') && (
+          {visibleModules.includes('scores') && (
             <a href={`/c/${slug}/leaderboard`} className="vit-header-link">🏆 Classement</a>
           )}
-          {publicModules.includes('calendar') && (
+          {visibleModules.includes('calendar') && (
             <a href={`/c/${slug}/events`} className="vit-header-link">📅 Événements</a>
           )}
-          {publicModules.includes('tournaments') && (
+          {visibleModules.includes('tournaments') && (
             <a href={`/c/${slug}/tournaments`} className="vit-header-link">🥊 Tournois</a>
           )}
-          {publicModules.includes('bets') && (
+          {visibleModules.includes('bets') && (
             <a href={`/c/${slug}/bets`} className="vit-header-link">🎲 Paris</a>
           )}
-          {publicModules.includes('forum') && (
+          {visibleModules.includes('forum') && (
             <a href={`/c/${slug}/forum`} className="vit-header-link">💬 Forum</a>
           )}
-          {publicModules.includes('shop') && (
+          {visibleModules.includes('shop') && (
             <a href={`/c/${slug}/shop`} className="vit-header-link">🛍️ Boutique</a>
           )}
-          <a href={`/login?redirect=/c/${slug}`} style={{
-            marginLeft: '12px',
-            fontFamily: `'Orbitron', sans-serif`, fontSize: '0.72rem',
-            color: primaryColor, border: `1px solid ${primaryColor}`,
-            padding: '8px 16px', borderRadius: '4px', textDecoration: 'none',
-            textTransform: 'uppercase', letterSpacing: '1px',
-            transition: 'background 0.2s',
-          }}>
-            Connexion
-          </a>
+          {user ? (
+            <span style={{
+              marginLeft: '12px',
+              fontFamily: `'Orbitron', sans-serif`, fontSize: '0.72rem',
+              color: primaryColor, border: `1px solid ${primaryColor}`,
+              padding: '8px 16px', borderRadius: '4px',
+              textTransform: 'uppercase', letterSpacing: '1px',
+            }}>
+              {currentDisplayName}
+            </span>
+          ) : (
+            <a href={`/login?redirect=/c/${slug}`} style={{
+              marginLeft: '12px',
+              fontFamily: `'Orbitron', sans-serif`, fontSize: '0.72rem',
+              color: primaryColor, border: `1px solid ${primaryColor}`,
+              padding: '8px 16px', borderRadius: '4px', textDecoration: 'none',
+              textTransform: 'uppercase', letterSpacing: '1px',
+            }}>
+              Connexion
+            </a>
+          )}
         </div>
       </header>
 
@@ -385,8 +416,8 @@ export default async function CommunityVitrinePage({ params }: Props) {
             )}
           </div>
 
-          {/* Join button */}
-          {publicModules.includes('applications') && (
+          {/* Join button — masqué si déjà membre */}
+          {!isMember && activeModules.includes('applications') && (
             <a href={`/c/${slug}/apply`} className="vit-join-btn">
               Rejoindre la communauté
             </a>
@@ -404,22 +435,22 @@ export default async function CommunityVitrinePage({ params }: Props) {
           borderBottom: `1px solid ${primaryColor}33`,
         }}>
           <div className="vit-module-nav-scroll" style={{ display: 'flex', maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
-            {publicModules.includes('scores') && (
+            {visibleModules.includes('scores') && (
               <a href={`/c/${slug}/leaderboard`} className="vit-nav-link">🏆 Classement</a>
             )}
-            {publicModules.includes('calendar') && (
+            {visibleModules.includes('calendar') && (
               <a href={`/c/${slug}/events`} className="vit-nav-link">📅 Événements</a>
             )}
-            {publicModules.includes('tournaments') && (
+            {visibleModules.includes('tournaments') && (
               <a href={`/c/${slug}/tournaments`} className="vit-nav-link">🥊 Tournois</a>
             )}
-            {publicModules.includes('bets') && (
+            {visibleModules.includes('bets') && (
               <a href={`/c/${slug}/bets`} className="vit-nav-link">🎲 Paris</a>
             )}
-            {publicModules.includes('forum') && (
+            {visibleModules.includes('forum') && (
               <a href={`/c/${slug}/forum`} className="vit-nav-link">💬 Forum</a>
             )}
-            {publicModules.includes('shop') && (
+            {visibleModules.includes('shop') && (
               <a href={`/c/${slug}/shop`} className="vit-nav-link">🛍️ Boutique</a>
             )}
           </div>
