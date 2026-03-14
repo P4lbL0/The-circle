@@ -18,14 +18,14 @@ const USE_CASES = [
   {
     type: 'Classe / École',
     icon: '📚',
-    desc: 'Notes par matière, agenda, forum de classe, association parents-élèves.',
-    stats: ['Moyenne par matière', 'Agenda scolaire', 'Forum privé'],
+    desc: 'Notes par matière, agenda, chat de classe, association parents-élèves.',
+    stats: ['Moyenne par matière', 'Agenda scolaire', 'Chat privé'],
     color: '#3b82f6',
   },
   {
     type: 'Association',
     icon: '🤝',
-    desc: 'Adhérents, événements, boutique de goodies, forum de discussion.',
+    desc: 'Adhérents, événements, boutique de goodies, chat de discussion.',
     stats: ['Gestion adhérents', 'Événements & RSVP', 'Boutique interne'],
     color: '#f97316',
   },
@@ -49,8 +49,8 @@ const FEATURES = [
   },
   {
     icon: '💬',
-    title: 'Forum intégré',
-    desc: 'Espace de discussion structuré. Catégories, modération, threads épinglés. Public ou réservé aux membres.',
+    title: 'Chat groupe',
+    desc: 'Messagerie temps réel style Messenger. Groupes de discussion, bulles, avatars, modération. Public ou réservé aux membres.',
   },
   {
     icon: '🛒',
@@ -104,7 +104,7 @@ const PLANS = [
       '30 membres max',
       'Stats & Classement',
       'Événements (5 actifs max)',
-      'Forum (3 catégories max)',
+      'Chat groupe (3 groupes max)',
       'Boutique virtuelle (10 articles max)',
       'Candidatures',
       'Vitrine publique /c/slug',
@@ -122,7 +122,7 @@ const PLANS = [
       '150 membres max',
       'Tournois & Brackets',
       'Paris internes',
-      'Événements & Forum illimités',
+      'Événements & Chat illimités',
       'Boutique virtuelle illimitée',
       'Sous-domaine slug.thecircle.app',
       'Support prioritaire',
@@ -259,7 +259,7 @@ export default function Home() {
             maxWidth: '600px', margin: '0 auto 44px',
           }}>
             The Circle est la plateforme tout-en-un pour créer et gérer n'importe quelle communauté.
-            Classements, événements, tournois, forum, boutique — tout personnalisable.
+            Classements, événements, tournois, chat groupe, boutique — tout personnalisable.
           </p>
 
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
