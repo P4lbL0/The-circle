@@ -408,6 +408,25 @@ export function DashboardHomeClient({ community, userId, canManage, stats, initi
           )}
         </div>
       </div>
+
+      {/* Footer légal */}
+      <div style={{ padding: '24px 28px', borderTop: '1px solid #1a1a1a', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+        <Link href="/legal" style={{ color: '#2a2a2a', textDecoration: 'none', fontSize: '0.75rem', transition: 'color 0.15s' }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#555' }}
+          onMouseLeave={e => { e.currentTarget.style.color = '#2a2a2a' }}>
+          Mentions légales
+        </Link>
+        <Link href="/privacy" style={{ color: '#2a2a2a', textDecoration: 'none', fontSize: '0.75rem', transition: 'color 0.15s' }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#555' }}
+          onMouseLeave={e => { e.currentTarget.style.color = '#2a2a2a' }}>
+          Confidentialité
+        </Link>
+        <Link href="/terms" style={{ color: '#2a2a2a', textDecoration: 'none', fontSize: '0.75rem', transition: 'color 0.15s' }}
+          onMouseEnter={e => { e.currentTarget.style.color = '#555' }}
+          onMouseLeave={e => { e.currentTarget.style.color = '#2a2a2a' }}>
+          CGU
+        </Link>
+      </div>
     </div>
   )
 }

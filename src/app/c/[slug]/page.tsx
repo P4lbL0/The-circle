@@ -606,19 +606,30 @@ export default async function CommunityVitrinePage({ params }: Props) {
       <footer style={{
         backgroundColor: theme.darkMode ? '#080808' : '#f0f0f0',
         textAlign: 'center',
-        padding: '40px',
+        padding: '32px 40px',
         color: theme.darkMode ? '#333' : '#bbb',
         fontSize: '0.82rem',
         borderTop: `1px solid ${theme.darkMode ? '#1a1a1a' : '#ddd'}`,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '14px',
       }}>
-        Propulsé par{' '}
-        <Link href="/" style={{
-          color: primaryColor, textDecoration: 'none',
-          fontFamily: `'Orbitron', sans-serif`, fontSize: '0.78rem',
-          letterSpacing: '2px',
-        }}>
-          THE CIRCLE
-        </Link>
+        <span>
+          Propulsé par{' '}
+          <Link href="/" style={{
+            color: primaryColor, textDecoration: 'none',
+            fontFamily: `'Orbitron', sans-serif`, fontSize: '0.78rem',
+            letterSpacing: '2px',
+          }}>
+            THE CIRCLE
+          </Link>
+        </span>
+        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <Link href="/legal" style={{ color: theme.darkMode ? '#2a2a2a' : '#ccc', textDecoration: 'none', fontSize: '0.75rem', transition: 'color 0.15s' }}>Mentions légales</Link>
+          <Link href="/privacy" style={{ color: theme.darkMode ? '#2a2a2a' : '#ccc', textDecoration: 'none', fontSize: '0.75rem', transition: 'color 0.15s' }}>Confidentialité</Link>
+          <Link href="/terms" style={{ color: theme.darkMode ? '#2a2a2a' : '#ccc', textDecoration: 'none', fontSize: '0.75rem', transition: 'color 0.15s' }}>CGU</Link>
+        </div>
       </footer>
     </div>
   )

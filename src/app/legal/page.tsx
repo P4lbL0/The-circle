@@ -34,7 +34,7 @@ export default function LegalPage() {
           <ul>
             <li><strong style={{ color: '#ccc' }}>Nom :</strong> Angelos Lemire</li>
             <li><strong style={{ color: '#ccc' }}>Statut :</strong> Particulier</li>
-            <li><strong style={{ color: '#ccc' }}>Adresse :</strong> [ADRESSE À COMPLÉTER]</li>
+            <li><strong style={{ color: '#ccc' }}>Adresse :</strong> Place du Marché, Thiais, 94320</li>
             <li><strong style={{ color: '#ccc' }}>Email :</strong> thecircle.contact@gmail.com</li>
           </ul>
         </div>
