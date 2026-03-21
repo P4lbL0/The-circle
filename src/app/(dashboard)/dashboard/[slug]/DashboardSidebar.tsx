@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect } from 'react'
@@ -233,7 +234,7 @@ export function DashboardSidebar({ community }: {
             const href     = `${base}${item.href}`
             const isActive = pathname.startsWith(href)
             return (
-              <a key={item.href} href={href} style={{
+              <Link key={item.href} href={href} style={{
                 display: 'flex', alignItems: 'center', gap: '10px',
                 padding: '9px 12px', borderRadius: '8px', marginBottom: '2px',
                 background: isActive ? 'rgba(255,193,7,0.1)' : 'transparent',
@@ -246,18 +247,18 @@ export function DashboardSidebar({ community }: {
               >
                 <span style={{ fontSize: '1rem', flexShrink: 0 }}>{item.icon}</span>
                 <span>{item.label}</span>
-              </a>
+              </Link>
             )
           })}
         </nav>
 
         {/* Footer */}
         <div style={{ padding: '14px 10px', borderTop: '1px solid #1a1a1a', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 12px', borderRadius: '8px', color: '#444', textDecoration: 'none', fontSize: '0.88rem', transition: 'all 0.15s' }}
+          <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 12px', borderRadius: '8px', color: '#444', textDecoration: 'none', fontSize: '0.88rem', transition: 'all 0.15s' }}
             onMouseEnter={e => { e.currentTarget.style.color = '#888' }}
             onMouseLeave={e => { e.currentTarget.style.color = '#444' }}>
             <span>🏠</span><span>Mes communautés</span>
-          </a>
+          </Link>
           <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 12px', borderRadius: '8px', background: 'transparent', border: 'none', color: '#444', cursor: 'pointer', fontSize: '0.88rem', width: '100%', textAlign: 'left', transition: 'all 0.15s' }}
             onMouseEnter={e => { e.currentTarget.style.color = '#FF2344'; e.currentTarget.style.background = 'rgba(255,35,68,0.08)' }}
             onMouseLeave={e => { e.currentTarget.style.color = '#444'; e.currentTarget.style.background = 'transparent' }}>
@@ -273,10 +274,10 @@ export function DashboardSidebar({ community }: {
             const href     = `${base}${item.href}`
             const isActive = pathname.startsWith(href)
             return (
-              <a key={item.href} href={href} className={`tc-bottom-nav-item${isActive ? ' active' : ''}`}>
+              <Link key={item.href} href={href} className={`tc-bottom-nav-item${isActive ? ' active' : ''}`}>
                 <span>{item.icon}</span>
                 <span>{item.label}</span>
-              </a>
+              </Link>
             )
           })}
           <button className="tc-bottom-nav-more" onClick={() => setMobileOpen(true)}>

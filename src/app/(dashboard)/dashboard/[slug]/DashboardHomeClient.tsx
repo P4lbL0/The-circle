@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -185,7 +186,7 @@ export function DashboardHomeClient({ community, userId, canManage, stats, initi
             { icon: '📅', label: 'Événements',       value: stats.events,   color: '#2196F3', link: `/dashboard/${community.slug}/events` },
             { icon: '🧩', label: 'Modules actifs',   value: stats.modules,  color: '#9C27B0', link: `/dashboard/${community.slug}/modules` },
           ].map(s => (
-            <a key={s.label} href={s.link} style={{ textDecoration: 'none', background: '#141414', border: `1px solid ${s.color}22`, borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px', transition: 'border-color 0.15s, transform 0.15s' }}
+            <Link key={s.label} href={s.link} style={{ textDecoration: 'none', background: '#141414', border: `1px solid ${s.color}22`, borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px', transition: 'border-color 0.15s, transform 0.15s' }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = s.color + '55'; e.currentTarget.style.transform = 'translateY(-1px)' }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = s.color + '22'; e.currentTarget.style.transform = 'translateY(0)' }}>
               <span style={{ fontSize: '1.4rem' }}>{s.icon}</span>
@@ -195,7 +196,7 @@ export function DashboardHomeClient({ community, userId, canManage, stats, initi
               <div style={{ fontSize: '0.75rem', color: '#555', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 {s.label}
               </div>
-            </a>
+            </Link>
           ))}
         </div>
 
@@ -221,12 +222,12 @@ export function DashboardHomeClient({ community, userId, canManage, stats, initi
               transition: 'all 0.15s',
             }
             if (a.href) return (
-              <a key={a.label} href={a.href} style={style}
+              <Link key={a.label} href={a.href} style={style}
                 onMouseEnter={e => { e.currentTarget.style.borderColor = '#FFC107'; e.currentTarget.style.color = '#FFC107' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = '#222'; e.currentTarget.style.color = '#888' }}>
                 <span style={{ fontSize: '1.2rem' }}>{a.icon}</span>
                 {a.active ? 'Copié !' : a.label}
-              </a>
+              </Link>
             )
             return (
               <button key={a.label} onClick={a.action} style={style}
