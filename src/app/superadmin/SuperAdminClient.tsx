@@ -5,6 +5,14 @@ import { createClient } from '@/lib/supabase/client'
 
 type Tier = 'free' | 'starter' | 'pro'
 
+interface GlobalAnn {
+  id: string
+  title: string
+  content: string
+  type: string
+  created_at: string
+}
+
 interface Community {
   id:                string
   name:              string
@@ -31,10 +39,12 @@ const TIER_COLORS: Record<string, string> = {
 
 const TIER_ORDER: Tier[] = ['free', 'starter', 'pro']
 
-export function SuperAdminClient({ adminName, communities, stats }: {
-  adminName:   string
-  communities: Community[]
-  stats:       Stats
+export function SuperAdminClient({ adminName, adminId, communities, stats, initialAnnouncements }: {
+  adminName:            string
+  adminId:              string
+  communities:          Community[]
+  stats:                Stats
+  initialAnnouncements: GlobalAnn[]
 }) {
   const supabase = createClient()
 
@@ -43,6 +53,43 @@ export function SuperAdminClient({ adminName, communities, stats }: {
   const [toast, setToast]     = useState<string | null>(null)
   const [search, setSearch]   = useState('')
   const [filter, setFilter]   = useState<'all' | Tier>('all')
+
+  // Annonces globales
+  const [anns, setAnns]         = useState<GlobalAnn[]>(initialAnnouncements)
+  const [annForm, setAnnForm]   = useState({ title: '', content: '', type: 'info' })
+  const [annSaving, setAnnSaving] = useState(false)
+  const [showAnnForm, setShowAnnForm] = useState(false)
+
+  const TYPE_META_SA: Record<string, { icon: string; color: string; label: string }> = {
+    info:    { icon: 'ℹ️', color: '#4CAF50', label: 'Info'    },
+    warning: { icon: '⚠️', color: '#FF9800', label: 'Avertissement' },
+    alert:   { icon: '🚨', color: '#FF2344', label: 'Alerte'  },
+  }
+
+  const createGlobalAnn = async () => {
+    if (!annForm.title.trim() || !annForm.content.trim()) return
+    setAnnSaving(true)
+    const { data, error } = await supabase
+      .from('announcements')
+      .insert({ community_id: null, author_id: adminId, title: annForm.title.trim(), content: annForm.content.trim(), type: annForm.type })
+      .select('id, title, content, type, created_at')
+      .single()
+
+    if (!error && data) {
+      setAnns(prev => [data, ...prev])
+      setAnnForm({ title: '', content: '', type: 'info' })
+      setShowAnnForm(false)
+      showToast('Annonce globale envoyée à toutes les communautés ✓')
+    } else {
+      showToast('Erreur : ' + (error?.message ?? 'inconnue'))
+    }
+    setAnnSaving(false)
+  }
+
+  const deleteGlobalAnn = async (id: string) => {
+    const { error } = await supabase.from('announcements').delete().eq('id', id)
+    if (!error) { setAnns(prev => prev.filter(a => a.id !== id)); showToast('Annonce supprimée') }
+  }
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500) }
 
@@ -255,6 +302,105 @@ export function SuperAdminClient({ adminName, communities, stats }: {
               </div>
             )
           })}
+        </div>
+
+        {/* ── Annonces globales ── */}
+        <div style={{ marginTop: '40px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+            <div>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fafafa', margin: 0 }}>📣 Annonces globales</h2>
+              <p style={{ fontSize: '0.82rem', color: '#52525b', margin: '4px 0 0' }}>Visibles par tous les membres de toutes les communautés.</p>
+            </div>
+            <button onClick={() => setShowAnnForm(!showAnnForm)} style={{
+              background: showAnnForm ? 'rgba(255,193,7,0.15)' : '#1c1c1f',
+              border: `1px solid ${showAnnForm ? '#FFC107' : '#27272a'}`,
+              color: showAnnForm ? '#FFC107' : '#a1a1aa',
+              padding: '8px 16px', borderRadius: '8px', cursor: 'pointer',
+              fontSize: '0.8rem', fontWeight: 600, transition: 'all 0.15s',
+            }}>
+              {showAnnForm ? '✕ Annuler' : '+ Nouvelle annonce'}
+            </button>
+          </div>
+
+          {showAnnForm && (
+            <div style={{ background: '#111113', border: '1px solid rgba(255,193,7,0.3)', borderRadius: '14px', padding: '20px', marginBottom: '16px' }}>
+              <div style={{ display: 'grid', gap: '12px' }}>
+                <input
+                  value={annForm.title}
+                  onChange={e => setAnnForm(f => ({ ...f, title: e.target.value }))}
+                  placeholder="Titre de l'annonce…"
+                  style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' as const }}
+                />
+                <textarea
+                  value={annForm.content}
+                  onChange={e => setAnnForm(f => ({ ...f, content: e.target.value }))}
+                  rows={3}
+                  placeholder="Message pour toutes les communautés…"
+                  style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' as const, resize: 'vertical' }}
+                />
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  {(['info', 'warning', 'alert'] as const).map(t => (
+                    <button key={t} onClick={() => setAnnForm(f => ({ ...f, type: t }))} style={{
+                      padding: '6px 14px', borderRadius: '6px', cursor: 'pointer',
+                      border: `1px solid ${TYPE_META_SA[t].color}`,
+                      background: annForm.type === t ? TYPE_META_SA[t].color + '20' : 'transparent',
+                      color: annForm.type === t ? TYPE_META_SA[t].color : '#52525b',
+                      fontSize: '0.78rem', fontWeight: 600, transition: 'all 0.15s',
+                    }}>
+                      {TYPE_META_SA[t].icon} {TYPE_META_SA[t].label}
+                    </button>
+                  ))}
+                  <button
+                    onClick={createGlobalAnn}
+                    disabled={annSaving || !annForm.title.trim() || !annForm.content.trim()}
+                    style={{
+                      marginLeft: 'auto', background: '#FFC107', color: '#000', border: 'none',
+                      padding: '8px 20px', borderRadius: '8px', cursor: 'pointer',
+                      fontWeight: 700, fontSize: '0.85rem', transition: 'opacity 0.15s',
+                      opacity: annSaving || !annForm.title.trim() || !annForm.content.trim() ? 0.5 : 1,
+                    }}>
+                    {annSaving ? '…' : 'Envoyer à tous'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {anns.length === 0 ? (
+            <div style={{ background: '#111113', border: '1px solid #1c1c1f', borderRadius: '12px', padding: '32px', textAlign: 'center', color: '#3f3f46', fontSize: '0.875rem' }}>
+              Aucune annonce globale.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {anns.map(ann => {
+                const meta = TYPE_META_SA[ann.type] ?? TYPE_META_SA.info
+                return (
+                  <div key={ann.id} style={{ background: '#111113', border: `1px solid ${meta.color}22`, borderLeft: `3px solid ${meta.color}`, borderRadius: '10px', padding: '14px 18px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                        <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#fafafa' }}>{ann.title}</span>
+                        <span style={{ fontSize: '0.65rem', background: meta.color + '15', border: `1px solid ${meta.color}30`, color: meta.color, borderRadius: '3px', padding: '1px 6px' }}>
+                          {meta.icon} {meta.label}
+                        </span>
+                        <span style={{ fontSize: '0.65rem', background: 'rgba(255,193,7,0.1)', border: '1px solid rgba(255,193,7,0.2)', color: '#FFC107', borderRadius: '3px', padding: '1px 6px' }}>
+                          GLOBAL
+                        </span>
+                      </div>
+                      <p style={{ margin: '0 0 6px', fontSize: '0.85rem', color: '#71717a', lineHeight: 1.5 }}>{ann.content}</p>
+                      <span style={{ fontSize: '0.72rem', color: '#3f3f46' }}>
+                        {new Date(ann.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <button onClick={() => deleteGlobalAnn(ann.id)} style={{ background: 'none', border: 'none', color: '#3f3f46', cursor: 'pointer', fontSize: '0.8rem', transition: 'color 0.15s', flexShrink: 0, padding: '4px' }}
+                      onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                      onMouseLeave={e => e.currentTarget.style.color = '#3f3f46'}>
+                      Supprimer
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         {/* Note */}

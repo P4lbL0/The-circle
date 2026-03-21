@@ -33,11 +33,20 @@ export default async function SuperAdminPage() {
   const { count: totalCommunities } = await supabase.from('communities').select('*', { count: 'exact', head: true })
   const { count: totalEvents }      = await supabase.from('events').select('*', { count: 'exact', head: true })
 
+  // Annonces globales (community_id IS NULL)
+  const { data: globalAnnouncements } = await supabase
+    .from('announcements')
+    .select('id, title, content, type, created_at')
+    .is('community_id', null)
+    .order('created_at', { ascending: false })
+
   return (
     <SuperAdminClient
       adminName={profile.display_name ?? profile.email ?? 'Admin'}
+      adminId={user.id}
       communities={communities ?? []}
       stats={{ totalUsers: totalUsers ?? 0, totalCommunities: totalCommunities ?? 0, totalEvents: totalEvents ?? 0 }}
+      initialAnnouncements={globalAnnouncements ?? []}
     />
   )
 }

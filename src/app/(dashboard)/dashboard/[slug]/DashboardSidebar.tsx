@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useState, useEffect } from 'react'
+import { DashboardBell } from './DashboardBell'
 
 interface Community {
   id: string
@@ -33,9 +34,8 @@ const BOTTOM_NAV = [
   { href: '/modules',     icon: '🧩', label: 'Modules'    },
 ]
 
-export function DashboardSidebar({ community, currentSlug }: {
+export function DashboardSidebar({ community }: {
   community: Community
-  currentSlug: string
 }) {
   const pathname = usePathname()
   const router   = useRouter()
@@ -171,9 +171,7 @@ export function DashboardSidebar({ community, currentSlug }: {
           ☰
         </button>
         <span className="tc-mobile-bar-title">{community.name}</span>
-        <span style={{ fontSize: '0.62rem', color: '#FFC107', fontFamily: 'Orbitron', textTransform: 'uppercase', letterSpacing: '1px', flexShrink: 0 }}>
-          {community.subscription_tier}
-        </span>
+        <DashboardBell communityId={community.id} />
       </div>
 
       {/* Backdrop */}
@@ -186,7 +184,7 @@ export function DashboardSidebar({ community, currentSlug }: {
 
         {/* Logo + nom */}
         <div style={{ padding: '20px 18px', paddingTop: '24px', borderBottom: '1px solid #1a1a1a' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px', paddingRight: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
             <div style={{
               width: '36px', height: '36px', borderRadius: '8px',
               background: '#1a1a1a', border: '1px solid #FFC107',
@@ -199,7 +197,7 @@ export function DashboardSidebar({ community, currentSlug }: {
                 : community.name[0]?.toUpperCase()
               }
             </div>
-            <div style={{ minWidth: 0 }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ fontFamily: 'Orbitron', fontSize: '0.78rem', color: 'white', textTransform: 'uppercase', letterSpacing: '1px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {community.name}
               </div>
@@ -207,6 +205,7 @@ export function DashboardSidebar({ community, currentSlug }: {
                 {community.subscription_tier}
               </div>
             </div>
+            <DashboardBell communityId={community.id} />
           </div>
 
           <a href={`/c/${community.slug}`} target="_blank" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '6px', padding: '7px 12px', color: '#666', fontSize: '0.78rem', textDecoration: 'none', transition: 'all 0.15s' }}

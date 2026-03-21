@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { MemberCard } from './MemberCard'
 import { safeEval } from '@/lib/safe-eval'
+import { VitrineBell } from './VitrineBell'
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -279,9 +280,18 @@ export default async function CommunityVitrinePage({ params }: Props) {
           {visibleModules.includes('shop') && (
             <a href={`/c/${slug}/shop`} className="vit-header-link">🛍️ Boutique</a>
           )}
+          {user && (
+            <VitrineBell
+              communityId={community.id}
+              userId={user.id}
+              primaryColor={primaryColor}
+              bgColor={theme.darkMode ? '#0d0d0d' : '#ffffff'}
+              borderColor={theme.darkMode ? '#2a2a2a' : '#e5e5e5'}
+            />
+          )}
           {user ? (
             <span style={{
-              marginLeft: '12px',
+              marginLeft: '8px',
               fontFamily: `'Orbitron', sans-serif`, fontSize: '0.72rem',
               color: primaryColor, border: `1px solid ${primaryColor}`,
               padding: '8px 16px', borderRadius: '4px',

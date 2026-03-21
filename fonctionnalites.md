@@ -1,6 +1,6 @@
 # Fonctionnalités — The Circle
 
-Dernière mise à jour : 21/03/2026 (session 2)
+Dernière mise à jour : 21/03/2026 (session 3)
 
 ---
 
@@ -72,6 +72,8 @@ Dernière mise à jour : 21/03/2026 (session 2)
 | Fonctionnalité | Comment ça marche |
 |---|---|
 | **Lien Événement ↔ Tournoi** | À la création d'un événement : créer un nouveau tournoi (avec template) ou lier un tournoi existant. Si récurrent, génère 1 tournoi par occurrence. Chaque tournoi reste modifiable indépendamment. |
+| **Dashboard Admin Home** | Page d'accueil `/dashboard/[slug]` avec stats (membres, attente, événements, modules), actions rapides, widget annonces. Remplace l'ancienne vue d'ensemble. |
+| **Système d'annonces** | Tables `announcements` + `announcement_reads`. Admin crée des annonces par communauté, SuperAdmin envoie des annonces globales. Cloche 🔔 dans sidebar admin (desktop + mobile) et vitrine membres. Badge rouge non-lues. |
 | **Chat temps réel** | Supabase Realtime, groupes de discussion, messages persistés |
 | **Forum** | Topics/threads, table `forum_threads` + `forum_posts` |
 | **Événements** | Récurrents (hebdo/mensuel), table `events` avec `recurrence_json`, lien optionnel vers un tournoi (`linked_tournament_id`) |

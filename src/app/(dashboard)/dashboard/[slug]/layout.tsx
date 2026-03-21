@@ -55,7 +55,7 @@ export default async function DashboardLayout({ children, params }: Props) {
         }
       `}</style>
       <div style={{ display: 'flex', minHeight: '100vh', background: '#0a0a0a' }}>
-        <DashboardSidebar community={community} currentSlug={slug} />
+        <DashboardSidebar community={community} />
         <main className="tc-main">
           {children}
         </main>
