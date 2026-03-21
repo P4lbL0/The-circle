@@ -504,8 +504,9 @@ export default function Home() {
         </span>
         <span style={{ fontSize: '0.8rem', color: '#3f3f46' }}>© 2026 The Circle. Tous droits réservés.</span>
         <div style={{ display: 'flex', gap: '24px' }}>
-          <Link href="/login" style={{ color: '#3f3f46', textDecoration: 'none', fontSize: '0.8rem', transition: 'color 0.15s' }}>Connexion</Link>
-          <Link href="/signup" style={{ color: '#3f3f46', textDecoration: 'none', fontSize: '0.8rem', transition: 'color 0.15s' }}>Inscription</Link>
+          <Link href="/legal" style={{ color: '#3f3f46', textDecoration: 'none', fontSize: '0.8rem', transition: 'color 0.15s' }}>Mentions légales</Link>
+          <Link href="/privacy" style={{ color: '#3f3f46', textDecoration: 'none', fontSize: '0.8rem', transition: 'color 0.15s' }}>Confidentialité</Link>
+          <Link href="/terms" style={{ color: '#3f3f46', textDecoration: 'none', fontSize: '0.8rem', transition: 'color 0.15s' }}>CGU</Link>
         </div>
       </footer>
     </div>
