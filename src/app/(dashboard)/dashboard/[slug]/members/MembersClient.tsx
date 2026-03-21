@@ -1,8 +1,22 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { generateBadgeCSS, BADGE_COLORS, BADGE_EFFECTS, BADGE_FRAMES } from '@/lib/badgeConfig'
+import type { BadgeDef } from '@/lib/badgeConfig'
+
+// ── Inject badge CSS (client-side, once) ─────────────────
+let _badgeCssInjected = false
+function ensureBadgeCSS() {
+  if (typeof document === 'undefined' || _badgeCssInjected) return
+  if (document.getElementById('tc-badge-styles')) { _badgeCssInjected = true; return }
+  const s = document.createElement('style')
+  s.id = 'tc-badge-styles'
+  s.textContent = generateBadgeCSS()
+  document.head.appendChild(s)
+  _badgeCssInjected = true
+}
 
 // ── Types ─────────────────────────────────────────────────
 interface Profile {
@@ -17,7 +31,7 @@ interface Member {
   profile_id: string
   role: 'owner' | 'moderator' | 'member' | 'pending'
   points: number
-  badges: any[]
+  badges: BadgeDef[]
   custom_stats: Record<string, any>
   joined_at: string
   is_public: boolean
@@ -45,26 +59,24 @@ const ROLE_COLORS: Record<string, string> = {
   pending:   '#FF9800',
 }
 
-const BADGE_COLORS = ['#FFD700', '#C0C0C0', '#FF2344', '#00bcd4', '#9c27b0', '#4CAF50', '#E91E63']
-
-export function MembersClient({ community, initialMembers, statFields, inviteToken }: {
+export function MembersClient({ community, initialMembers, statFields, inviteToken, isOwner = false }: {
   community: Community
   initialMembers: Member[]
   statFields: StatField[]
   inviteToken: string
+  isOwner?: boolean
 }) {
   const supabase = createClient()
   const router = useRouter()
 
-  const [members, setMembers]         = useState<Member[]>(initialMembers)
-  const [search, setSearch]           = useState('')
-  const [filterRole, setFilterRole]   = useState<string>('all')
+  const [members, setMembers]             = useState<Member[]>(initialMembers)
+  const [search, setSearch]               = useState('')
+  const [filterRole, setFilterRole]       = useState<string>('all')
   const [editingMember, setEditingMember] = useState<Member | null>(null)
-  const [inviteLink, setInviteLink]   = useState<string>('')
-  const [showInvite, setShowInvite]   = useState(false)
-  const [saving, setSaving]           = useState(false)
-  const [copied, setCopied]           = useState(false)
-  const [toast, setToast]             = useState<string | null>(null)
+  const [inviteLink, setInviteLink]       = useState<string>('')
+  const [showInvite, setShowInvite]       = useState(false)
+  const [copied, setCopied]               = useState(false)
+  const [toast, setToast]                 = useState<string | null>(null)
 
   // ── Toast ───────────────────────────────────────────────
   const showToast = (msg: string) => {
@@ -119,10 +131,10 @@ export function MembersClient({ community, initialMembers, statFields, inviteTok
   }
 
   // ── Ajouter badge ───────────────────────────────────────
-  const addBadge = async (memberId: string, badgeName: string, badgeColor: string) => {
-    const member  = members.find(m => m.id === memberId)
+  const addBadge = async (memberId: string, badge: BadgeDef) => {
+    const member    = members.find(m => m.id === memberId)
     if (!member) return
-    const newBadge  = { name: badgeName, color: badgeColor, awarded_at: new Date().toISOString() }
+    const newBadge  = { ...badge, awarded_at: new Date().toISOString() }
     const newBadges = [...(member.badges ?? []), newBadge]
 
     const { error } = await supabase
@@ -141,7 +153,7 @@ export function MembersClient({ community, initialMembers, statFields, inviteTok
 
   // ── Supprimer badge ─────────────────────────────────────
   const removeBadge = async (memberId: string, badgeIndex: number) => {
-    const member  = members.find(m => m.id === memberId)
+    const member    = members.find(m => m.id === memberId)
     if (!member) return
     const newBadges = member.badges.filter((_, i) => i !== badgeIndex)
 
@@ -160,7 +172,7 @@ export function MembersClient({ community, initialMembers, statFields, inviteTok
 
   // ── Mettre à jour stats custom ──────────────────────────
   const updateStat = async (memberId: string, key: string, value: any) => {
-    const member  = members.find(m => m.id === memberId)
+    const member   = members.find(m => m.id === memberId)
     if (!member) return
     const newStats = { ...member.custom_stats, [key]: value }
 
@@ -194,11 +206,10 @@ export function MembersClient({ community, initialMembers, statFields, inviteTok
 
   // ── Export CSV ──────────────────────────────────────────
   const exportCSV = (rows: Member[], fields: StatField[], communityName: string) => {
-    const statKeys = fields.map(f => f.key)
+    const statKeys   = fields.map(f => f.key)
     const statLabels = fields.map(f => f.label)
-
-    const header = ['Nom', 'Email', 'Rôle', 'Points', ...statLabels, 'Rejoint le'].join(',')
-    const lines = rows.map(m => {
+    const header     = ['Nom', 'Email', 'Rôle', 'Points', ...statLabels, 'Rejoint le'].join(',')
+    const lines      = rows.map(m => {
       const name  = m.profiles?.display_name ?? m.profiles?.email?.split('@')[0] ?? ''
       const email = m.profiles?.email ?? ''
       const stats = statKeys.map(k => m.custom_stats?.[k] ?? '').join(',')
@@ -207,7 +218,6 @@ export function MembersClient({ community, initialMembers, statFields, inviteTok
         .map(v => `"${String(v).replace(/"/g, '""')}"`)
         .join(',')
     })
-
     const csv  = [header, ...lines].join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url  = URL.createObjectURL(blob)
@@ -220,7 +230,7 @@ export function MembersClient({ community, initialMembers, statFields, inviteTok
 
   // ── Filtres ─────────────────────────────────────────────
   const filtered = members.filter(m => {
-    const name  = m.profiles?.display_name ?? m.profiles?.email ?? ''
+    const name        = m.profiles?.display_name ?? m.profiles?.email ?? ''
     const matchSearch = name.toLowerCase().includes(search.toLowerCase())
     const matchRole   = filterRole === 'all' || m.role === filterRole
     return matchSearch && matchRole
@@ -283,17 +293,19 @@ export function MembersClient({ community, initialMembers, statFields, inviteTok
           >
             ↓ CSV
           </button>
-          <button
-            onClick={generateInviteLink}
-            style={{
-              background: '#FFC107', color: '#000', border: 'none',
-              padding: '9px 22px', fontFamily: 'Orbitron', fontWeight: 'bold',
-              fontSize: '0.78rem', cursor: 'pointer', borderRadius: '4px',
-              textTransform: 'uppercase', letterSpacing: '1px',
-            }}
-          >
-            + Inviter
-          </button>
+          {isOwner && (
+            <button
+              onClick={generateInviteLink}
+              style={{
+                background: '#FFC107', color: '#000', border: 'none',
+                padding: '9px 22px', fontFamily: 'Orbitron', fontWeight: 'bold',
+                fontSize: '0.78rem', cursor: 'pointer', borderRadius: '4px',
+                textTransform: 'uppercase', letterSpacing: '1px',
+              }}
+            >
+              + Inviter
+            </button>
+          )}
         </div>
       </div>
 
@@ -317,23 +329,15 @@ export function MembersClient({ community, initialMembers, statFields, inviteTok
             </p>
             <div style={{ display: 'flex', gap: '10px' }}>
               <input
-                readOnly
-                value={inviteLink}
-                style={{
-                  flex: 1, background: '#0a0a0a', border: '1px solid #333',
-                  color: '#ccc', padding: '10px 14px', borderRadius: '6px',
-                  fontFamily: 'monospace', fontSize: '0.8rem',
-                }}
+                readOnly value={inviteLink}
+                style={{ flex: 1, background: '#0a0a0a', border: '1px solid #333', color: '#ccc', padding: '10px 14px', borderRadius: '6px', fontFamily: 'monospace', fontSize: '0.8rem' }}
               />
               <button
                 onClick={copyLink}
                 style={{
-                  background: copied ? '#4CAF50' : '#1a1a1a',
-                  border: `1px solid ${copied ? '#4CAF50' : '#333'}`,
-                  color: copied ? '#fff' : '#ccc',
-                  padding: '10px 20px', borderRadius: '6px',
-                  cursor: 'pointer', fontSize: '0.85rem', fontFamily: 'Orbitron',
-                  transition: 'all 0.2s', whiteSpace: 'nowrap',
+                  background: copied ? '#4CAF50' : '#1a1a1a', border: `1px solid ${copied ? '#4CAF50' : '#333'}`,
+                  color: copied ? '#fff' : '#ccc', padding: '10px 20px', borderRadius: '6px',
+                  cursor: 'pointer', fontSize: '0.85rem', fontFamily: 'Orbitron', transition: 'all 0.2s', whiteSpace: 'nowrap',
                 }}
               >
                 {copied ? '✓ Copié' : 'Copier'}
@@ -345,16 +349,9 @@ export function MembersClient({ community, initialMembers, statFields, inviteTok
         {/* Filtres */}
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
           <input
-            type="text"
-            placeholder="Rechercher un membre..."
-            value={search}
+            type="text" placeholder="Rechercher un membre..." value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{
-              flex: 1, minWidth: '200px',
-              background: '#141414', border: '1px solid #2a2a2a',
-              color: '#e0e0e0', padding: '10px 16px', borderRadius: '8px',
-              fontFamily: 'Rajdhani', fontSize: '1rem', outline: 'none',
-            }}
+            style={{ flex: 1, minWidth: '200px', background: '#141414', border: '1px solid #2a2a2a', color: '#e0e0e0', padding: '10px 16px', borderRadius: '8px', fontFamily: 'Rajdhani', fontSize: '1rem', outline: 'none' }}
           />
           <div style={{ display: 'flex', gap: '6px' }}>
             {(['all', 'owner', 'moderator', 'member', 'pending'] as const).map(role => (
@@ -363,12 +360,10 @@ export function MembersClient({ community, initialMembers, statFields, inviteTok
                 onClick={() => setFilterRole(role)}
                 style={{
                   background: filterRole === role ? (role === 'all' ? '#FFC107' : ROLE_COLORS[role]) : '#141414',
-                  color: filterRole === role ? (role === 'all' ? '#000' : '#000') : '#888',
+                  color: filterRole === role ? '#000' : '#888',
                   border: `1px solid ${filterRole === role ? (role === 'all' ? '#FFC107' : ROLE_COLORS[role]) : '#2a2a2a'}`,
-                  padding: '8px 14px', borderRadius: '6px',
-                  cursor: 'pointer', fontSize: '0.82rem', fontFamily: 'Orbitron',
-                  textTransform: 'uppercase', letterSpacing: '1px',
-                  transition: 'all 0.15s',
+                  padding: '8px 14px', borderRadius: '6px', cursor: 'pointer',
+                  fontSize: '0.82rem', fontFamily: 'Orbitron', textTransform: 'uppercase', letterSpacing: '1px', transition: 'all 0.15s',
                 }}
               >
                 {role === 'all' ? 'Tous' : role} ({counts[role]})
@@ -378,7 +373,7 @@ export function MembersClient({ community, initialMembers, statFields, inviteTok
         </div>
 
         {/* Layout : liste + panel édition */}
-        <div style={{ display: 'grid', gridTemplateColumns: editingMember ? '1fr 380px' : '1fr', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: editingMember ? '1fr 400px' : '1fr', gap: '20px' }}>
 
           {/* Liste membres */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -388,8 +383,8 @@ export function MembersClient({ community, initialMembers, statFields, inviteTok
               </div>
             )}
             {filtered.map(member => {
-              const name    = member.profiles?.display_name ?? member.profiles?.email?.split('@')[0] ?? '???'
-              const initial = name[0]?.toUpperCase()
+              const name      = member.profiles?.display_name ?? member.profiles?.email?.split('@')[0] ?? '???'
+              const initial   = name[0]?.toUpperCase()
               const isEditing = editingMember?.id === member.id
 
               return (
@@ -406,8 +401,8 @@ export function MembersClient({ community, initialMembers, statFields, inviteTok
                 >
                   {/* Avatar */}
                   <div style={{
-                    width: '44px', height: '44px', borderRadius: '6px',
-                    background: '#222', border: `1px solid ${ROLE_COLORS[member.role] ?? '#333'}`,
+                    width: '44px', height: '44px', borderRadius: '6px', background: '#222',
+                    border: `1px solid ${ROLE_COLORS[member.role] ?? '#333'}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontFamily: 'Orbitron', fontSize: '1.1rem', color: '#FFC107',
                     overflow: 'hidden', flexShrink: 0,
@@ -427,8 +422,7 @@ export function MembersClient({ community, initialMembers, statFields, inviteTok
                       <span style={{
                         fontSize: '0.7rem', padding: '2px 8px', borderRadius: '3px',
                         border: `1px solid ${ROLE_COLORS[member.role]}`,
-                        color: ROLE_COLORS[member.role],
-                        background: `${ROLE_COLORS[member.role]}18`,
+                        color: ROLE_COLORS[member.role], background: `${ROLE_COLORS[member.role]}18`,
                         textTransform: 'uppercase', fontWeight: 'bold',
                       }}>
                         {member.role}
@@ -440,17 +434,20 @@ export function MembersClient({ community, initialMembers, statFields, inviteTok
                     {/* Badges */}
                     {member.badges?.length > 0 && (
                       <div style={{ display: 'flex', gap: '4px', marginTop: '6px', flexWrap: 'wrap' }}>
-                        {member.badges.map((b: any, i: number) => (
-                          <span key={i} style={{
-                            fontSize: '0.62rem', padding: '1px 6px', borderRadius: '2px',
-                            border: `1px solid ${b.color ?? '#FFC107'}`,
-                            color: b.color ?? '#FFC107',
-                            background: `${b.color ?? '#FFC107'}18`,
-                            textTransform: 'uppercase', fontWeight: 'bold',
-                          }}>
-                            {b.name}
-                          </span>
-                        ))}
+                        {member.badges.map((b, i) => {
+                          const isHex = b.color?.startsWith('#')
+                          return (
+                            <span key={i} style={{
+                              fontSize: '0.62rem', padding: '1px 6px', borderRadius: '2px',
+                              border: `1px solid ${isHex ? (b.color ?? '#FFC107') : '#FFC107'}`,
+                              color: isHex ? (b.color ?? '#FFC107') : '#FFC107',
+                              background: `${isHex ? (b.color ?? '#FFC107') : '#FFC107'}18`,
+                              textTransform: 'uppercase', fontWeight: 'bold',
+                            }}>
+                              {b.name}
+                            </span>
+                          )
+                        })}
                       </div>
                     )}
                   </div>
@@ -470,6 +467,7 @@ export function MembersClient({ community, initialMembers, statFields, inviteTok
             <EditPanel
               member={editingMember}
               statFields={statFields}
+              isOwner={isOwner}
               onClose={() => setEditingMember(null)}
               onChangeRole={changeRole}
               onUpdatePoints={updatePoints}
@@ -485,22 +483,45 @@ export function MembersClient({ community, initialMembers, statFields, inviteTok
   )
 }
 
-// ── Panel d'édition d'un membre ────────────────────────────
-function EditPanel({ member, statFields, onClose, onChangeRole, onUpdatePoints, onAddBadge, onRemoveBadge, onUpdateStat, onRemove }: {
+// ── Panel d'édition ────────────────────────────────────────
+function EditPanel({ member, statFields, isOwner, onClose, onChangeRole, onUpdatePoints, onAddBadge, onRemoveBadge, onUpdateStat, onRemove }: {
   member: Member
   statFields: StatField[]
+  isOwner: boolean
   onClose: () => void
   onChangeRole: (id: string, role: string) => void
   onUpdatePoints: (id: string, points: number) => void
-  onAddBadge: (id: string, name: string, color: string) => void
+  onAddBadge: (id: string, badge: BadgeDef) => void
   onRemoveBadge: (id: string, index: number) => void
   onUpdateStat: (id: string, key: string, value: any) => void
   onRemove: (id: string) => void
 }) {
+  useEffect(() => { ensureBadgeCSS() }, [])
+
   const name = member.profiles?.display_name ?? member.profiles?.email?.split('@')[0] ?? '???'
-  const [newBadgeName, setNewBadgeName]   = useState('')
-  const [newBadgeColor, setNewBadgeColor] = useState('#FFC107')
-  const [localPoints, setLocalPoints]     = useState(member.points)
+  const [localPoints, setLocalPoints] = useState(member.points)
+
+  // ── Forge state ─────────────────────────────────────────
+  const [forgeName,   setForgeName]   = useState('')
+  const [forgeColor,  setForgeColor]  = useState('gold')
+  const [forgeEffect, setForgeEffect] = useState('')
+  const [forgeFrame,  setForgeFrame]  = useState('')
+  const [forgeDesc,   setForgeDesc]   = useState('')
+  const [isHexColor,  setIsHexColor]  = useState(false)
+  const [hexColor,    setHexColor]    = useState('#FFC107')
+
+  const handleAddBadge = () => {
+    if (!forgeName.trim()) return
+    onAddBadge(member.id, {
+      name:   forgeName.trim().toUpperCase(),
+      color:  isHexColor ? hexColor : forgeColor,
+      effect: forgeEffect || undefined,
+      frame:  forgeFrame  || undefined,
+      desc:   forgeDesc   || undefined,
+    })
+    setForgeName('')
+    setForgeDesc('')
+  }
 
   return (
     <div style={{
@@ -514,30 +535,37 @@ function EditPanel({ member, statFields, onClose, onChangeRole, onUpdatePoints, 
         <span style={{ fontFamily: 'Orbitron', fontSize: '0.85rem', color: '#FFC107', textTransform: 'uppercase', letterSpacing: '1px' }}>
           {name}
         </span>
-        <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#555', cursor: 'pointer', fontSize: '1.1rem' }}>✕</button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <a
+            href={`/c/${(member as any).__slug ?? ''}`}
+            style={{ fontSize: '0.65rem', color: '#555', fontFamily: 'Orbitron', textDecoration: 'none' }}
+          />
+          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#555', cursor: 'pointer', fontSize: '1.1rem' }}>✕</button>
+        </div>
       </div>
 
-      {/* Rôle */}
-      <Section title="Rôle">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-          {(['moderator', 'member', 'pending'] as const).map(role => (
-            <button
-              key={role}
-              onClick={() => onChangeRole(member.id, role)}
-              style={{
-                background: member.role === role ? `${ROLE_COLORS[role]}22` : '#1a1a1a',
-                border: `1px solid ${member.role === role ? ROLE_COLORS[role] : '#2a2a2a'}`,
-                color: member.role === role ? ROLE_COLORS[role] : '#777',
-                padding: '8px', borderRadius: '6px',
-                cursor: 'pointer', fontSize: '0.78rem', fontFamily: 'Orbitron',
-                textTransform: 'uppercase', transition: 'all 0.15s',
-              }}
-            >
-              {role}
-            </button>
-          ))}
-        </div>
-      </Section>
+      {/* Rôle — owner uniquement */}
+      {isOwner && (
+        <Section title="Rôle">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+            {(['moderator', 'member', 'pending'] as const).map(role => (
+              <button
+                key={role}
+                onClick={() => onChangeRole(member.id, role)}
+                style={{
+                  background: member.role === role ? `${ROLE_COLORS[role]}22` : '#1a1a1a',
+                  border: `1px solid ${member.role === role ? ROLE_COLORS[role] : '#2a2a2a'}`,
+                  color: member.role === role ? ROLE_COLORS[role] : '#777',
+                  padding: '8px', borderRadius: '6px', cursor: 'pointer',
+                  fontSize: '0.78rem', fontFamily: 'Orbitron', textTransform: 'uppercase', transition: 'all 0.15s',
+                }}
+              >
+                {role}
+              </button>
+            ))}
+          </div>
+        </Section>
+      )}
 
       {/* Points */}
       <Section title="Points">
@@ -547,15 +575,10 @@ function EditPanel({ member, statFields, onClose, onChangeRole, onUpdatePoints, 
             style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#ccc', width: '36px', height: '36px', borderRadius: '6px', cursor: 'pointer', fontSize: '1.1rem' }}
           >−</button>
           <input
-            type="number"
-            value={localPoints}
+            type="number" value={localPoints}
             onChange={e => setLocalPoints(Number(e.target.value))}
             onBlur={() => onUpdatePoints(member.id, localPoints)}
-            style={{
-              flex: 1, background: '#0a0a0a', border: '1px solid #2a2a2a',
-              color: '#FFC107', padding: '8px', borderRadius: '6px',
-              fontFamily: 'Orbitron', fontSize: '1rem', textAlign: 'center', outline: 'none',
-            }}
+            style={{ flex: 1, background: '#0a0a0a', border: '1px solid #2a2a2a', color: '#FFC107', padding: '8px', borderRadius: '6px', fontFamily: 'Orbitron', fontSize: '1rem', textAlign: 'center', outline: 'none' }}
           />
           <button
             onClick={() => { const v = localPoints + 10; setLocalPoints(v); onUpdatePoints(member.id, v) }}
@@ -564,59 +587,204 @@ function EditPanel({ member, statFields, onClose, onChangeRole, onUpdatePoints, 
         </div>
       </Section>
 
-      {/* Badges */}
-      <Section title="Badges">
+      {/* Badges actuels */}
+      <Section title={`Badges (${member.badges?.length ?? 0})`}>
         {member.badges?.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
-            {member.badges.map((b: any, i: number) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{
-                  fontSize: '0.65rem', padding: '2px 8px', borderRadius: '2px',
-                  border: `1px solid ${b.color ?? '#FFC107'}`,
-                  color: b.color ?? '#FFC107',
-                  background: `${b.color ?? '#FFC107'}18`,
-                  textTransform: 'uppercase', fontWeight: 'bold',
-                }}>
-                  {b.name}
-                </span>
-                <button
-                  onClick={() => onRemoveBadge(member.id, i)}
-                  style={{ background: 'transparent', border: 'none', color: '#555', cursor: 'pointer', fontSize: '0.8rem', padding: '0 2px' }}
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
+            {member.badges.map((b, i) => {
+              const isHex = b.color?.startsWith('#')
+              return (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{
+                    fontSize: '0.65rem', padding: '2px 8px', borderRadius: '2px',
+                    border: `1px solid ${isHex ? b.color : '#FFC107'}`,
+                    color: isHex ? b.color : '#FFC107',
+                    background: `${isHex ? b.color : '#FFC107'}18`,
+                    textTransform: 'uppercase', fontWeight: 'bold',
+                  }}>
+                    {b.name}
+                  </span>
+                  <button
+                    onClick={() => onRemoveBadge(member.id, i)}
+                    style={{ background: 'transparent', border: 'none', color: '#555', cursor: 'pointer', fontSize: '0.8rem', padding: '0 2px' }}
+                  >✕</button>
+                </div>
+              )
+            })}
           </div>
         )}
-        <div style={{ display: 'flex', gap: '6px' }}>
-          <input
-            placeholder="Nom du badge"
-            value={newBadgeName}
-            onChange={e => setNewBadgeName(e.target.value)}
+      </Section>
+
+      {/* ── FORGE ─────────────────────────────────────────── */}
+      <Section title="⚒ Forge de Badge">
+        {/* Aperçu live */}
+        <div style={{
+          background: '#0a0a0a', border: '1px solid #222', borderRadius: '8px',
+          padding: '14px', marginBottom: '14px', textAlign: 'center',
+          minHeight: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          {/* Rendu direct via classes CSS injectées */}
+          <span
+            className={[
+              'tc-badge tc-badge-md',
+              !isHexColor && forgeColor ? `tc-badge-${forgeColor}` : '',
+              forgeEffect ? `tc-effect-${forgeEffect}` : '',
+              forgeFrame  ? `tc-frame-${forgeFrame}`  : '',
+            ].filter(Boolean).join(' ')}
+            style={isHexColor ? {
+              border: `1px solid ${hexColor}`, color: hexColor, background: `${hexColor}18`,
+            } : {}}
+          >
+            {forgeName || 'APERÇU'}
+          </span>
+        </div>
+
+        {/* Nom du badge */}
+        <input
+          placeholder="Nom du badge (ex: MVP, KILLER…)"
+          value={forgeName}
+          onChange={e => setForgeName(e.target.value.toUpperCase())}
+          style={{
+            width: '100%', background: '#0a0a0a', border: '1px solid #2a2a2a',
+            color: '#ccc', padding: '8px 10px', borderRadius: '6px',
+            fontFamily: 'Orbitron', fontSize: '0.82rem', outline: 'none',
+            marginBottom: '8px', boxSizing: 'border-box', textTransform: 'uppercase',
+          }}
+        />
+
+        {/* Couleur */}
+        <div style={{ marginBottom: '8px' }}>
+          <div style={{ fontSize: '0.65rem', color: '#555', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>
+            Couleur
+          </div>
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', alignItems: 'center' }}>
+            <button
+              onClick={() => setIsHexColor(false)}
+              style={{
+                background: !isHexColor ? '#FFC10718' : '#1a1a1a',
+                border: `1px solid ${!isHexColor ? '#FFC107' : '#2a2a2a'}`,
+                color: !isHexColor ? '#FFC107' : '#666',
+                padding: '5px 12px', borderRadius: '4px', cursor: 'pointer',
+                fontFamily: 'Orbitron', fontSize: '0.65rem',
+              }}
+            >
+              Thèmes
+            </button>
+            <button
+              onClick={() => setIsHexColor(true)}
+              style={{
+                background: isHexColor ? '#FFC10718' : '#1a1a1a',
+                border: `1px solid ${isHexColor ? '#FFC107' : '#2a2a2a'}`,
+                color: isHexColor ? '#FFC107' : '#666',
+                padding: '5px 12px', borderRadius: '4px', cursor: 'pointer',
+                fontFamily: 'Orbitron', fontSize: '0.65rem',
+              }}
+            >
+              HEX custom
+            </button>
+          </div>
+
+          {isHexColor ? (
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input
+                type="color" value={hexColor} onChange={e => setHexColor(e.target.value)}
+                style={{ width: '42px', height: '32px', border: 'none', background: 'transparent', cursor: 'pointer' }}
+              />
+              <input
+                value={hexColor} onChange={e => setHexColor(e.target.value)}
+                style={{ flex: 1, background: '#0a0a0a', border: '1px solid #2a2a2a', color: '#ccc', padding: '6px 10px', borderRadius: '6px', fontFamily: 'monospace', fontSize: '0.85rem', outline: 'none' }}
+              />
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+              {BADGE_COLORS.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => setForgeColor(c.id)}
+                  title={c.label}
+                  style={{
+                    width: '24px', height: '24px', borderRadius: '4px', cursor: 'pointer',
+                    background: c.preview,
+                    border: forgeColor === c.id ? '2px solid white' : '2px solid transparent',
+                    outline: forgeColor === c.id ? `2px solid ${c.preview}` : 'none',
+                    outlineOffset: '1px',
+                    transition: 'transform 0.1s',
+                    transform: forgeColor === c.id ? 'scale(1.2)' : 'scale(1)',
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Effet */}
+        <div style={{ marginBottom: '8px' }}>
+          <div style={{ fontSize: '0.65rem', color: '#555', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>
+            Effet
+          </div>
+          <select
+            value={forgeEffect}
+            onChange={e => setForgeEffect(e.target.value)}
             style={{
-              flex: 1, background: '#0a0a0a', border: '1px solid #2a2a2a',
+              width: '100%', background: '#0a0a0a', border: '1px solid #2a2a2a',
               color: '#ccc', padding: '8px 10px', borderRadius: '6px',
               fontFamily: 'Rajdhani', fontSize: '0.9rem', outline: 'none',
             }}
-          />
-          <input
-            type="color"
-            value={newBadgeColor}
-            onChange={e => setNewBadgeColor(e.target.value)}
-            style={{ width: '38px', height: '38px', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: '4px' }}
-          />
-          <button
-            onClick={() => { if (newBadgeName.trim()) { onAddBadge(member.id, newBadgeName.trim(), newBadgeColor); setNewBadgeName('') } }}
+          >
+            <option value="">— Aucun —</option>
+            {BADGE_EFFECTS.map(e => (
+              <option key={e.id} value={e.id}>{e.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Frame */}
+        <div style={{ marginBottom: '12px' }}>
+          <div style={{ fontSize: '0.65rem', color: '#555', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>
+            Bordure (Frame)
+          </div>
+          <select
+            value={forgeFrame}
+            onChange={e => setForgeFrame(e.target.value)}
             style={{
-              background: '#FFC107', color: '#000', border: 'none',
-              padding: '8px 14px', borderRadius: '6px', cursor: 'pointer',
-              fontFamily: 'Orbitron', fontSize: '0.75rem', fontWeight: 'bold',
+              width: '100%', background: '#0a0a0a', border: '1px solid #2a2a2a',
+              color: '#ccc', padding: '8px 10px', borderRadius: '6px',
+              fontFamily: 'Rajdhani', fontSize: '0.9rem', outline: 'none',
             }}
           >
-            +
-          </button>
+            <option value="">— Aucune —</option>
+            {BADGE_FRAMES.map(f => (
+              <option key={f.id} value={f.id}>{f.label}</option>
+            ))}
+          </select>
         </div>
+
+        {/* Description */}
+        <input
+          placeholder="Description (tooltip optionnel)"
+          value={forgeDesc}
+          onChange={e => setForgeDesc(e.target.value)}
+          style={{
+            width: '100%', background: '#0a0a0a', border: '1px solid #2a2a2a',
+            color: '#888', padding: '7px 10px', borderRadius: '6px',
+            fontFamily: 'Rajdhani', fontSize: '0.9rem', outline: 'none',
+            marginBottom: '12px', boxSizing: 'border-box',
+          }}
+        />
+
+        <button
+          onClick={handleAddBadge}
+          disabled={!forgeName.trim()}
+          style={{
+            width: '100%', background: forgeName.trim() ? '#FFC107' : '#2a2a2a',
+            color: forgeName.trim() ? '#000' : '#555',
+            border: 'none', padding: '10px', borderRadius: '6px', cursor: forgeName.trim() ? 'pointer' : 'not-allowed',
+            fontFamily: 'Orbitron', fontSize: '0.78rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px',
+            transition: 'all 0.15s',
+          }}
+        >
+          ⚒ Forger & Attribuer
+        </button>
       </Section>
 
       {/* Stats custom */}
@@ -632,11 +800,7 @@ function EditPanel({ member, statFields, onClose, onChangeRole, onUpdatePoints, 
                   type={field.type === 'number' || field.type === 'percentage' ? 'number' : 'text'}
                   value={member.custom_stats?.[field.key] ?? ''}
                   onChange={e => onUpdateStat(member.id, field.key, field.type === 'number' ? Number(e.target.value) : e.target.value)}
-                  style={{
-                    width: '90px', background: '#0a0a0a', border: '1px solid #2a2a2a',
-                    color: '#FFC107', padding: '6px 10px', borderRadius: '6px',
-                    fontFamily: 'Orbitron', fontSize: '0.85rem', textAlign: 'right', outline: 'none',
-                  }}
+                  style={{ width: '90px', background: '#0a0a0a', border: '1px solid #2a2a2a', color: '#FFC107', padding: '6px 10px', borderRadius: '6px', fontFamily: 'Orbitron', fontSize: '0.85rem', textAlign: 'right', outline: 'none' }}
                 />
               </div>
             ))}
@@ -644,17 +808,15 @@ function EditPanel({ member, statFields, onClose, onChangeRole, onUpdatePoints, 
         </Section>
       )}
 
-      {/* Danger zone */}
-      {member.role !== 'owner' && (
+      {/* Danger zone — owner uniquement */}
+      {isOwner && member.role !== 'owner' && (
         <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #2a2a2a' }}>
           <button
             onClick={() => onRemove(member.id)}
             style={{
-              width: '100%', background: 'transparent',
-              border: '1px solid #FF2344', color: '#FF2344',
+              width: '100%', background: 'transparent', border: '1px solid #FF2344', color: '#FF2344',
               padding: '10px', borderRadius: '6px', cursor: 'pointer',
-              fontFamily: 'Orbitron', fontSize: '0.75rem', textTransform: 'uppercase',
-              letterSpacing: '1px', transition: 'all 0.2s',
+              fontFamily: 'Orbitron', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', transition: 'all 0.2s',
             }}
             onMouseEnter={e => { (e.currentTarget).style.background = '#FF234422' }}
             onMouseLeave={e => { (e.currentTarget).style.background = 'transparent' }}

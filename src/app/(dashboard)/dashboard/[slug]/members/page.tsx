@@ -13,14 +13,16 @@ export default async function MembersPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  // Récupérer la communauté (layout a déjà vérifié les droits)
   const { data: community } = await supabase
     .from('communities')
-    .select('id, name, slug, subscription_tier, invite_token')
+    .select('id, name, slug, subscription_tier, invite_token, owner_id')
     .eq('slug', slug)
-    .eq('owner_id', user.id)
     .single()
 
   if (!community) redirect('/dashboard')
+
+  const isOwner = community.owner_id === user.id
 
   const { data: members } = await supabase
     .from('community_members')
@@ -40,6 +42,7 @@ export default async function MembersPage({ params }: Props) {
       initialMembers={members ?? []}
       statFields={(statSchema?.fields as any[]) ?? []}
       inviteToken={community.invite_token ?? community.slug}
+      isOwner={isOwner}
     />
   )
 }

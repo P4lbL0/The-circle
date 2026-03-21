@@ -14,14 +14,29 @@ export default async function DashboardLayout({ children, params }: Props) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  // Récupérer la communauté (sans contrainte owner pour les modos)
   const { data: community } = await supabase
     .from('communities')
-    .select('id, name, slug, logo_url, subscription_tier')
+    .select('id, name, slug, logo_url, subscription_tier, owner_id')
     .eq('slug', slug)
-    .eq('owner_id', user.id)
     .single()
 
   if (!community) redirect('/dashboard')
+
+  const isOwner = community.owner_id === user.id
+
+  // Si pas owner, vérifier s'il est modérateur actif
+  if (!isOwner) {
+    const { data: membership } = await supabase
+      .from('community_members')
+      .select('role')
+      .eq('community_id', community.id)
+      .eq('profile_id', user.id)
+      .in('role', ['moderator'])
+      .single()
+
+    if (!membership) redirect('/dashboard')
+  }
 
   return (
     <>
